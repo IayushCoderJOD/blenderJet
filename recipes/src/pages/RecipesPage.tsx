@@ -66,7 +66,6 @@ export default function RecipesPage() {
         <div className="rp-hero-content">
           <p className="hero-eyebrow">Our Favourite</p>
           <h1 className="hero-title">RECIPES</h1>
-          <p className="hero-tagline">Blend with love · Sip with joy</p>
         </div>
         <div className="hero-wave">
           <svg viewBox="0 0 1440 80" preserveAspectRatio="none">
@@ -79,7 +78,6 @@ export default function RecipesPage() {
       <main className="rp-main">
         <div className="rp-section-header">
           <h2 className="rp-section-title">BLEND ENDLESSLY</h2>
-          <p className="rp-section-sub">Every smoothie tells a story — here are ours</p>
           <div className="title-divider">
             <span />
             <span className="divider-heart">💜</span>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const HEARTS = ['💕', '💗', '❤️', '💖', '🌸', '💓', '🌺', '✨'];
@@ -13,18 +13,78 @@ export default function ProposalPage() {
   const [attempts, setAttempts] = useState(0);
   const [musicStarted, setMusicStarted] = useState(false);
 
-  // Browsers block autoplay with sound until the user interacts with the page.
-  // Start the song on the first click / tap / keypress anywhere.
+  // YouTube IFrame Player API — the only reliable way to play audio on mobile.
+  // We pre-create a hidden player, then call playVideo() synchronously inside
+  // the first user gesture (tap/click/key) so the browser allows the sound.
+  const playerRef = useRef<any>(null);
+  const wantsPlayRef = useRef(false);
+  const startedRef = useRef(false);
+
   useEffect(() => {
-    const start = () => setMusicStarted(true);
-    const opts: AddEventListenerOptions = { once: true };
-    window.addEventListener('pointerdown', start, opts);
-    window.addEventListener('keydown', start, opts);
-    window.addEventListener('touchstart', start, opts);
+    const w = window as any;
+
+    const createPlayer = () => {
+      if (playerRef.current) return;
+      playerRef.current = new w.YT.Player('yt-music-player', {
+        videoId: MUSIC_ID,
+        playerVars: {
+          autoplay: 0,
+          controls: 0,
+          playsinline: 1, // iOS: don't force fullscreen
+          loop: 1,
+          playlist: MUSIC_ID,
+          start: 20,
+        },
+        events: {
+          onReady: (e: any) => {
+            // If the user already tapped before the API finished loading
+            if (wantsPlayRef.current) {
+              try { e.target.unMute(); e.target.playVideo(); } catch { /* ignore */ }
+            }
+          },
+        },
+      });
+    };
+
+    if (w.YT && w.YT.Player) {
+      createPlayer();
+    } else {
+      if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.body.appendChild(tag);
+      }
+      const prev = w.onYouTubeIframeAPIReady;
+      w.onYouTubeIframeAPIReady = () => { prev?.(); createPlayer(); };
+    }
+
+    return () => {
+      try { playerRef.current?.destroy?.(); } catch { /* ignore */ }
+      playerRef.current = null;
+    };
+  }, []);
+
+  // Start music on the first user gesture (required by mobile autoplay policies).
+  useEffect(() => {
+    const start = () => {
+      if (startedRef.current) return;
+      startedRef.current = true;
+      wantsPlayRef.current = true;
+      const p = playerRef.current;
+      if (p?.playVideo) {
+        try { p.unMute(); p.playVideo(); } catch { /* ignore */ }
+      }
+      setMusicStarted(true);
+    };
+    window.addEventListener('pointerdown', start);
+    window.addEventListener('touchend', start);
+    window.addEventListener('click', start);
+    window.addEventListener('keydown', start);
     return () => {
       window.removeEventListener('pointerdown', start);
+      window.removeEventListener('touchend', start);
+      window.removeEventListener('click', start);
       window.removeEventListener('keydown', start);
-      window.removeEventListener('touchstart', start);
     };
   }, []);
 
@@ -51,25 +111,20 @@ export default function ProposalPage() {
 
   return (
     <>
-      {/* Background music — starts on first interaction, unmounts when navigating away */}
-      {musicStarted && (
-        <iframe
-          src={`https://www.youtube.com/embed/${MUSIC_ID}?autoplay=1&start=20&loop=1&playlist=${MUSIC_ID}&controls=0`}
-          allow="autoplay; encrypted-media"
-          title="background-music"
-          style={{
-            position: 'fixed',
-            opacity: 0,
-            width: '1px',
-            height: '1px',
-            top: 0,
-            left: 0,
-            pointerEvents: 'none',
-            border: 'none',
-            zIndex: -1,
-          }}
-        />
-      )}
+      {/* Hidden YouTube player (API-controlled). Destroyed on unmount → music stops. */}
+      <div
+        id="yt-music-player"
+        style={{
+          position: 'fixed',
+          opacity: 0,
+          width: '1px',
+          height: '1px',
+          top: 0,
+          left: 0,
+          pointerEvents: 'none',
+          zIndex: -1,
+        }}
+      />
 
       <div className="proposal-page">
         {/* Floating hearts */}
