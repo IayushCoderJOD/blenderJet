@@ -364,6 +364,14 @@ body {
   letter-spacing: 0.5px;
   pointer-events: none;
 }
+.music-hint {
+  animation: hintPulse 2s ease-in-out infinite;
+}
+@keyframes hintPulse {
+  0%, 100% { opacity: 0.65; }
+  50%       { opacity: 1; }
+}
+
 .music-bars {
   display: flex;
   align-items: flex-end;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const HEARTS = ['💕', '💗', '❤️', '💖', '🌸', '💓', '🌺', '✨'];
@@ -11,7 +11,22 @@ export default function ProposalPage() {
   const [success, setSuccess] = useState(false);
   const [shake, setShake] = useState(false);
   const [attempts, setAttempts] = useState(0);
-  const musicStarted = true;
+  const [musicStarted, setMusicStarted] = useState(false);
+
+  // Browsers block autoplay with sound until the user interacts with the page.
+  // Start the song on the first click / tap / keypress anywhere.
+  useEffect(() => {
+    const start = () => setMusicStarted(true);
+    const opts: AddEventListenerOptions = { once: true };
+    window.addEventListener('pointerdown', start, opts);
+    window.addEventListener('keydown', start, opts);
+    window.addEventListener('touchstart', start, opts);
+    return () => {
+      window.removeEventListener('pointerdown', start);
+      window.removeEventListener('keydown', start);
+      window.removeEventListener('touchstart', start);
+    };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,23 +51,25 @@ export default function ProposalPage() {
 
   return (
     <>
-      {/* Background music — unmounts when navigating away */}
-      <iframe
-        src={`https://www.youtube.com/embed/${MUSIC_ID}?autoplay=1&start=20&loop=1&playlist=${MUSIC_ID}&controls=0`}
-        allow="autoplay; encrypted-media"
-        title="background-music"
-        style={{
-          position: 'fixed',
-          opacity: 0,
-          width: '1px',
-          height: '1px',
-          top: 0,
-          left: 0,
-          pointerEvents: 'none',
-          border: 'none',
-          zIndex: -1,
-        }}
-      />
+      {/* Background music — starts on first interaction, unmounts when navigating away */}
+      {musicStarted && (
+        <iframe
+          src={`https://www.youtube.com/embed/${MUSIC_ID}?autoplay=1&start=20&loop=1&playlist=${MUSIC_ID}&controls=0`}
+          allow="autoplay; encrypted-media"
+          title="background-music"
+          style={{
+            position: 'fixed',
+            opacity: 0,
+            width: '1px',
+            height: '1px',
+            top: 0,
+            left: 0,
+            pointerEvents: 'none',
+            border: 'none',
+            zIndex: -1,
+          }}
+        />
+      )}
 
       <div className="proposal-page">
         {/* Floating hearts */}
@@ -77,13 +94,18 @@ export default function ProposalPage() {
         <div className="orb orb-2" aria-hidden="true" />
         <div className="orb orb-3" aria-hidden="true" />
 
-        {/* Music playing indicator */}
-        {musicStarted && (
+        {/* Music indicator — hint before first tap, then "now playing" */}
+        {musicStarted ? (
           <div className="music-indicator" aria-label="Music playing">
             <span className="music-bars">
               <span /><span /><span /><span />
             </span>
             <span>Playing for you</span>
+          </div>
+        ) : (
+          <div className="music-indicator music-hint" aria-label="Tap to play music">
+            <span>🎵</span>
+            <span>Tap anywhere to play our song</span>
           </div>
         )}
 
