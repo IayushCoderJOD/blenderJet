@@ -112,11 +112,11 @@ export default function ProposalPage() {
         <div className={`proposal-card ${shake ? 'shake' : ''} ${success ? 'success-state' : ''}`}>
           {success ? (
             <div className="success-body">
-              <div className="success-ring">💍</div>
+              <div className="success-ring">🌸</div>
               <h1 className="success-title">That's the day!</h1>
               <p className="success-sub">Opening your special memories...</p>
               <div className="burst-row">
-                {['💕', '💖', '💗', '💓', '💞', '🌸', '✨'].map((h, i) => (
+                {['💕', '💖', '💗', '💓', '💞', '✨'].map((h, i) => (
                   <span key={i} className="burst-heart" style={{ animationDelay: `${i * 0.08}s` }}>
                     {h}
                   </span>
