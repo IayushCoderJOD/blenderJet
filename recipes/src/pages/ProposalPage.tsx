@@ -16,16 +16,22 @@ export default function ProposalPage() {
   // YouTube IFrame Player API — the only reliable way to play audio on mobile.
   // We pre-create a hidden player, then call playVideo() synchronously inside
   // the first user gesture (tap/click/key) so the browser allows the sound.
+  const hostRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
   const wantsPlayRef = useRef(false);
   const startedRef = useRef(false);
 
   useEffect(() => {
     const w = window as any;
+    let cancelled = false;
 
     const createPlayer = () => {
-      if (playerRef.current) return;
-      playerRef.current = new w.YT.Player('yt-music-player', {
+      if (playerRef.current || cancelled || !hostRef.current) return;
+      // Give YouTube a throwaway child to replace — NOT a React-managed node.
+      // This avoids React's removeChild crash on unmount.
+      const mount = document.createElement('div');
+      hostRef.current.appendChild(mount);
+      playerRef.current = new w.YT.Player(mount, {
         videoId: MUSIC_ID,
         playerVars: {
           autoplay: 0,
@@ -59,6 +65,7 @@ export default function ProposalPage() {
     }
 
     return () => {
+      cancelled = true;
       try { playerRef.current?.destroy?.(); } catch { /* ignore */ }
       playerRef.current = null;
     };
@@ -113,7 +120,7 @@ export default function ProposalPage() {
     <>
       {/* Hidden YouTube player (API-controlled). Destroyed on unmount → music stops. */}
       <div
-        id="yt-music-player"
+        ref={hostRef}
         style={{
           position: 'fixed',
           opacity: 0,
